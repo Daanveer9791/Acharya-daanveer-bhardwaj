@@ -1,46 +1,41 @@
-services:
-  - name: "Kundli Consultation"
-    name_hi: "कुंडली परामर्श"
-    desc: "In-depth birth-chart analysis for marriage, career, health & finance."
-    price: "₹3100"
-    price_note: "onwards"
-  - name: "Kundli Milan"
-    name_hi: "कुंडली मिलान"
-    desc: "Guna milan & compatibility for confident marriage decisions."
-    price: "On enquiry"
-    price_note: ""
-  - name: "Vastu Consultation"
-    name_hi: "वास्तु परामर्श"
-    desc: "Home, office & plot vastu for harmony and prosperity."
-    price: "On enquiry"
-    price_note: ""
-  - name: "Gemstone (Ratna)"
-    name_hi: "रत्न परामर्श"
-    desc: "Right gemstone, weight & wearing vidhi as per your chart."
-    price: "On enquiry"
-    price_note: ""
-  - name: "Shubh Muhurat"
-    name_hi: "शुभ मुहूर्त"
-    desc: "Auspicious timings for marriage, griha pravesh, naming & business."
-    price: "On enquiry"
-    price_note: ""
-  - name: "Dosha Nivaran"
-    name_hi: "दोष निवारण"
-    desc: "Remedies for Mangal, Kaal Sarp, Pitra & Shani dosha."
-    price: "On enquiry"
-    price_note: ""
-  - name: "Puja & Havan"
-    name_hi: "पूजा एवं हवन"
-    desc: "Satyanarayan, Rudrabhishek, Griha Pravesh & more — full vidhi."
-    price: "On enquiry"
-    price_note: ""
-  - name: "Astrology Courses"
-    name_hi: "ज्योतिष कक्षाएँ"
-    desc: "Jyotish Praveen & Visharad — learn authentic Vedic astrology."
-    price: "On enquiry"
-    price_note: ""
-  - name: "Tarot Reading"
-    name_hi: "टैरो रीडिंग"
-    desc: "Quick, focused guidance for specific questions on your mind."
-    price: "On enquiry"
-    price_note: ""
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: /images
+public_folder: /images
+
+collections:
+  - name: services
+    label: Services
+    folder: _data
+    file: services.yml
+    format: yaml
+    fields:
+      - label: Services List
+        name: services
+        widget: list
+        fields:
+          - { label: Service Name (English), name: name, widget: string }
+          - { label: Service Name (Hindi), name: name_hi, widget: string }
+          - { label: Description, name: desc, widget: text }
+          - { label: Price, name: price, widget: string }
+          - { label: Price Note, name: price_note, widget: string }
+
+  - name: about
+    label: About
+    file: _data/about.yml
+    format: yaml
+    fields:
+      - { label: Bio (English), name: bio_en, widget: textarea }
+      - { label: Years Experience, name: years, widget: number }
+
+  - name: contact
+    label: Contact
+    file: _data/contact.yml
+    format: yaml
+    fields:
+      - { label: Phone, name: phone, widget: string }
+      - { label: WhatsApp, name: whatsapp, widget: string }
+      - { label: Email, name: email, widget: string }
+      - { label: Address, name: address, widget: textarea }
