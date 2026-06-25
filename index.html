@@ -1,0 +1,41 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: /images
+public_folder: /images
+
+collections:
+  - name: services
+    label: Services
+    folder: _data
+    file: services.yml
+    format: yaml
+    fields:
+      - label: Services List
+        name: services
+        widget: list
+        fields:
+          - { label: Service Name (English), name: name, widget: string }
+          - { label: Service Name (Hindi), name: name_hi, widget: string }
+          - { label: Description, name: desc, widget: text }
+          - { label: Price, name: price, widget: string }
+          - { label: Price Note, name: price_note, widget: string }
+
+  - name: about
+    label: About
+    file: _data/about.yml
+    format: yaml
+    fields:
+      - { label: Bio (English), name: bio_en, widget: textarea }
+      - { label: Years Experience, name: years, widget: number }
+
+  - name: contact
+    label: Contact
+    file: _data/contact.yml
+    format: yaml
+    fields:
+      - { label: Phone, name: phone, widget: string }
+      - { label: WhatsApp, name: whatsapp, widget: string }
+      - { label: Email, name: email, widget: string }
+      - { label: Address, name: address, widget: textarea }
