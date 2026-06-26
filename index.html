@@ -313,15 +313,15 @@ footer .fc{font-size:11px;opacity:.6;}
     <div class="card panchang panel reveal">
       <div class="ph-head">
         <div><div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-2);margin-bottom:4px;">आज का पंचांग</div><h3>Today's Panchang</h3></div>
-        <div style="text-align:right;"><div class="ph-date" id="phDate">—</div><span class="ph-tag">live</span></div>
+        <div style="text-align:right;"><div class="ph-date" id="phDate">—</div><span class="ph-tag" id="phTag">loading…</span></div>
       </div>
       <div class="ph-grid">
-        <div class="ph-cell"><small>वार</small><b id="phVaar">शुक्रवार</b></div>
-        <div class="ph-cell"><small>तिथि</small><b>शुक्ल पञ्चमी</b></div>
-        <div class="ph-cell"><small>नक्षत्र</small><b>पुनर्वसु</b></div>
-        <div class="ph-cell"><small>योग</small><b>शोभन</b></div>
-        <div class="ph-cell"><small>करण</small><b>बव</b></div>
-        <div class="ph-cell"><small>सूर्य</small><b style="font-family:Mukta;font-size:13px;">5:42 · 19:21</b></div>
+        <div class="ph-cell"><small>वार · Day</small><b id="phVaar">—</b></div>
+        <div class="ph-cell"><small>तिथि · Tithi</small><b id="phTithi">…</b></div>
+        <div class="ph-cell"><small>नक्षत्र · Nakshatra</small><b id="phNak">…</b></div>
+        <div class="ph-cell"><small>योग · Yoga</small><b id="phYoga">…</b></div>
+        <div class="ph-cell"><small>करण · Karana</small><b id="phKaran">…</b></div>
+        <div class="ph-cell"><small>स्थान</small><b style="font-family:Mukta;font-size:13px;">Gurgaon</b></div>
       </div>
     </div>
   </div>
@@ -401,6 +401,47 @@ footer .fc{font-size:11px;opacity:.6;}
 var d=new Date();
 document.getElementById('phDate').textContent=d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
 document.getElementById('phVaar').textContent=['रविवार','सोमवार','मंगलवार','बुधवार','गुरुवार','शुक्रवार','शनिवार'][d.getDay()];
+
+// ===== LIVE PANCHANG via VedAstro (free tier, no key) =====
+(function loadPanchang(){
+  var lat=28.4595, lng=77.0266;           // Gurgaon
+  var dd=String(d.getDate()).padStart(2,'0');
+  var mm=String(d.getMonth()+1).padStart(2,'0');
+  var yyyy=d.getFullYear();
+  var dateStr=dd+'-'+mm+'-'+yyyy;
+  var base='https://api.vedastro.org/api/Calculate';
+  var loc=lat+','+lng, tz='+05:30';
+  var map={ LunarDay:'phTithi', MoonConstellation:'phNak', Yoga:'phYoga', Karana:'phKaran' };
+  var done=0, ok=0, total=Object.keys(map).length;
+
+  function finish(){
+    var tag=document.getElementById('phTag');
+    if(tag) tag.textContent = ok>0 ? 'live' : 'sample';
+  }
+  function setVal(id,val){
+    var el=document.getElementById(id);
+    if(el && val){ el.textContent=val; el.style.fontFamily='Mukta'; }
+  }
+  function fetchOne(method){
+    var url=base+'/'+method+'/Location/'+loc+'/Time/12:00/'+dateStr+'/'+tz+'/Ayanamsa/LAHIRI';
+    var ctrl=new AbortController();
+    var t=setTimeout(function(){ctrl.abort();},9000);
+    fetch(url,{signal:ctrl.signal})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        clearTimeout(t);
+        var v = j && j.Payload ? j.Payload[method] : null;
+        if(v && typeof v==='object'){
+          v = v.Name || v.NameStr ||
+              Object.values(v).find(function(x){return typeof x==='string';}) || null;
+        }
+        if(v){ setVal(map[method], String(v)); ok++; }
+      })
+      .catch(function(){ clearTimeout(t); })
+      .finally(function(){ done++; if(done===total) finish(); });
+  }
+  Object.keys(map).forEach(fetchOne);
+})();
 
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
 document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
