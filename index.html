@@ -206,6 +206,32 @@ footer .fc{font-size:11px;opacity:.6;}
 .orbit3 .planet{background:var(--saffron);box-shadow:0 0 12px var(--saffron);}
 @media(max-width:800px){.solar-bg{opacity:.15;right:-200px;}}
 
+
+/* SAMAGRI MODAL */
+.puja-btns{display:flex;gap:8px;margin-top:4px;}
+.puja .pbtn{flex:1;text-align:center;display:inline-block;font-size:12px;font-weight:700;padding:9px 8px;border-radius:999px;background:linear-gradient(135deg,var(--saffron),var(--gold));color:#0F1B3C;border:none;cursor:pointer;box-shadow:0 0 12px rgba(255,149,0,.3);transition:box-shadow .2s;}
+.puja .pbtn:hover{box-shadow:0 0 20px rgba(255,149,0,.5);}
+.puja .pbtn-book{background:transparent;color:var(--gold);border:1.5px solid var(--gold);box-shadow:none;}
+.puja .pbtn-book:hover{background:rgba(212,175,55,.12);box-shadow:0 0 12px rgba(212,175,55,.3);}
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(5,10,25,.8);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:linear-gradient(135deg,var(--bg-card),#243860);border:1px solid rgba(212,175,55,.35);border-radius:18px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px -10px rgba(0,0,0,.7);}
+.modal-head{position:sticky;top:0;background:linear-gradient(135deg,#1A2A4E,#243860);padding:22px 24px;border-bottom:1px solid rgba(212,175,55,.25);display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.modal-head h3{font-family:'Cormorant Garamond';font-size:24px;color:var(--gold);text-shadow:0 0 15px rgba(212,175,55,.3);margin:0;}
+.modal-close{background:rgba(255,255,255,.08);border:none;color:var(--text-light);width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;flex-shrink:0;}
+.modal-close:hover{background:rgba(255,149,0,.3);}
+.modal-body{padding:18px 24px 24px;}
+.m-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:8px;background:rgba(0,0,0,.2);}
+.m-item:hover{background:rgba(212,175,55,.08);}
+.m-item input{width:19px;height:19px;accent-color:var(--saffron);cursor:pointer;flex-shrink:0;}
+.m-name{flex:1;}
+.m-hi{font-family:'Tiro Devanagari Sanskrit';color:var(--gold);font-weight:600;display:block;line-height:1.2;}
+.m-en{font-size:12px;color:var(--text-soft);}
+.m-qty{font-weight:700;color:var(--gold);font-size:14px;margin-left:auto;white-space:nowrap;}
+.modal-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+.modal-actions button{flex:1;min-width:120px;padding:11px;border:none;border-radius:999px;font-weight:600;cursor:pointer;}
+.m-wa{background:#25D366;color:#fff;}
+.m-print{background:linear-gradient(135deg,var(--saffron),var(--gold));color:#0F1B3C;}
 </style>
 </head>
 <body>
@@ -326,25 +352,13 @@ footer .fc{font-size:11px;opacity:.6;}
 <section class="section" id="puja">
   <div class="wrap">
     <div style="text-align:center;margin-bottom:32px;">
-      <div style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-2);margin-bottom:12px;">पूजा एवं हवन</div>
-      <h2 style="font-size:clamp(30px,5.2vw,48px);color:var(--gold);line-height:1.08;margin-bottom:8px;text-shadow:0 0 25px rgba(212,175,55,.4);">Complete Puja Services</h2>
-      <p style="font-size:15px;color:var(--text-soft);max-width:58ch;margin:0 auto;line-height:1.7;">Each puja performed with full vidhi-vidhan. Get the samagri checklist via WhatsApp.</p>
+      <div style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-2);margin-bottom:12px;">पूजा सामग्री सूची</div>
+      <h2 style="font-size:clamp(30px,5.2vw,48px);color:var(--gold);line-height:1.08;margin-bottom:10px;text-shadow:0 0 25px rgba(212,175,55,.4);">Puja Samagri Lists</h2>
+      <p style="font-size:15px;color:var(--text-soft);max-width:60ch;margin:0 auto;line-height:1.7;">Tap any puja to open its complete samagri list. Tick off items as you shop, then share the list or book the puja on WhatsApp.</p>
     </div>
-    <div class="puja-grid">
-      <div class="puja reveal"><div class="hi">सत्यनारायण कथा</div><div class="en">Satyanarayan Katha</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Satyanarayan" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">सत्यनारायण (साधारण)</div><div class="en">Satyanarayan Simple</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Satyanarayan%20Simple" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">गृह प्रवेश</div><div class="en">Griha Pravesh</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Griha%20Pravesh" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">रुद्राभिषेक</div><div class="en">Rudrabhishek</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Rudrabhishek" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">नामकरण</div><div class="en">Naamkaran</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Naamkaran" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">मंगल फेरे</div><div class="en">Mangal Phere</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Mangal%20Phere" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">चूड़ा संस्कार</div><div class="en">Chooda Sanskar</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Chooda" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">व्यापार पूजन</div><div class="en">Vyapar Pujan</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Vyapar" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">पितृ पूजन</div><div class="en">Pitra Pujan</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Pitra" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">लक्ष्मी-गणेश</div><div class="en">Diwali Lakshmi</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Lakshmi" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">सुन्दर काण्ड</div><div class="en">Sundarkand Path</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Sundarkand" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">नज़र हवन</div><div class="en">Nazar Aadi Havan</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Nazar" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">मूल शांति</div><div class="en">Mool Shanti</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Mool" target="_blank">Book</a></div></div>
-      <div class="puja reveal"><div class="hi">नींव पूजन</div><div class="en">Neev Pujan</div><div class="puja-acts"><a href="samagri-checklist.html" target="_blank">Samagri</a><a class="b" href="https://wa.me/919810969791?text=Book%20Neev" target="_blank">Book</a></div></div>
+    <div class="puja-grid" id="pujaGrid"></div>
+    <div style="text-align:center;margin-top:32px;">
+      <a class="btn btn-primary" href="https://wa.me/919810969791?text=Namaste%20Acharya%20ji%2C%20I%20have%20a%20query." target="_blank" rel="noopener">💬 Any Queries? Chat on WhatsApp</a>
     </div>
   </div>
 </section>
@@ -390,6 +404,71 @@ document.getElementById('phVaar').textContent=['रविवार','सोम�
 
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
 document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+</script>
+
+<!-- SAMAGRI MODAL -->
+<div class="modal-overlay" id="samagriModal" onclick="if(event.target===this)closeSamagri()">
+  <div class="modal">
+    <div class="modal-head"><h3 id="mTitle">Samagri</h3><button class="modal-close" onclick="closeSamagri()">×</button></div>
+    <div class="modal-body">
+      <div id="mItems"></div>
+      <div class="modal-actions">
+        <button class="m-wa" onclick="shareSamagri()">📞 Send on WhatsApp</button>
+        <button class="m-print" onclick="window.print()">🖨️ Print</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PUJAS = [
+  {k:"satyanarayan-full",hi:"सत्यनारायण कथा एवं हवन",en:"Satyanarayan Katha & Havan",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["मौली","Kalava","1"],["पान के पत्ते","Betel leaves","5"],["फूल","Flowers","आवश्यक"],["फल","Fruit","आवश्यक"],["मिठाई","Sweets","250 g"],["घी","Ghee","500 g"],["धूपबत्ती","Dhoop","1"],["दीया","Diya","2"],["नारियल","Coconut","1"],["दूध","Milk","250 g"],["हवन सामग्री","Havan mix","500 g"],["हवन की लकड़ी","Havan wood","1 kg"]]},
+  {k:"satyanarayan-simple",hi:"सत्यनारायण पूजन (साधारण)",en:"Satyanarayan (Simple)",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["मौली","Kalava","1"],["पान के पत्ते","Betel leaves","5"],["फूल","Flowers","आवश्यक"],["फल","Fruit","आवश्यक"],["मिठाई","Sweets","250 g"],["घी","Ghee","300 g"],["दीया","Diya","2"],["नारियल","Coconut","1"],["दूध","Milk","250 g"],["कलश","Kalash","1"]]},
+  {k:"griha-pravesh",hi:"गृह प्रवेश",en:"Griha Pravesh",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["घी","Ghee","500 g"],["दीया","Diya","2"],["नारियल","Coconut","2"],["हवन सामग्री","Havan mix","500 g"],["हवन की लकड़ी","Havan wood","1 kg"],["गंगाजल","Gangajal","आवश्यक"],["दूध","Milk","50 g"],["दही","Curd","50 g"],["लाल कपड़ा","Red cloth","¼ मी"]]},
+  {k:"naamkaran",hi:"नामकरण संस्कार",en:"Naamkaran Sanskar",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["पान के पत्ते","Betel leaves","5"],["फूल","Flowers","आवश्यक"],["घी","Ghee","200 g"],["दीया","Diya","2"],["नारियल","Coconut","1"],["दूध","Milk","100 g"],["दही","Curd","50 g"],["शहद","Honey","50 g"],["मिठाई","Sweets","250 g"]]},
+  {k:"neev-pujan",hi:"नींव पूजन",en:"Neev Pujan",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["घी","Ghee","500 g"],["दीया","Diya","2"],["नारियल","Coconut","1"],["हवन सामग्री","Havan mix","500 g"],["हवन की लकड़ी","Havan wood","1 kg"],["लाल कपड़ा","Red cloth","1 मी"],["गंगाजल","Gangajal","आवश्यक"]]},
+  {k:"mool-shanti",hi:"मूल शांति",en:"Mool Shanti",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","250 g"],["घी","Ghee","500 g"],["धूपबत्ती","Dhoop","1"],["हवन सामग्री","Havan mix","500 g"],["हवन की लकड़ी","Havan wood","1 kg"],["नवग्रह की लकड़ी","Navagraha wood","1 पैकेट"],["कपूर","Camphor","20 g"],["नारियल","Coconut","1"],["मिठाई","Sweets","250 g"]]},
+  {k:"mangal-phere",hi:"मंगल फेरे",en:"Mangal Phere (Wedding)",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","250 g"],["पान के पत्ते","Betel leaves","5"],["फूल","Flowers","आवश्यक"],["घी","Ghee","200 g"],["दीया","Diya","2"],["नारियल","Coconut","1"],["लाल कपड़ा","Red cloth","2 मी"],["मिठाई","Sweets","500 g"],["फल","Fruit","आवश्यक"]]},
+  {k:"chooda-sanskar",hi:"चूड़ा संस्कार",en:"Chooda Sanskar",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["पान के पत्ते","Betel leaves","5"],["फूल","Flowers","आवश्यक"],["घी","Ghee","200 g"],["दीया","Diya","2"],["नारियल","Coconut","1"],["दूध","Milk","100 g"],["दही","Curd","50 g"],["मिठाई","Sweets","250 g"]]},
+  {k:"vyapar-pujan",hi:"व्यापार पूजन",en:"Vyapar Pujan",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["घी","Ghee","300 g"],["दीया","Diya","2"],["धूपबत्ती","Dhoop","1"],["नारियल","Coconut","1"],["पान के पत्ते","Betel leaves","5"],["फूल","Flowers","आवश्यक"],["मिठाई","Sweets","250 g"],["लाल कपड़ा","Red cloth","1 मी"]]},
+  {k:"pitra-pujan",hi:"पितृ पूजन हवन",en:"Pitra Pujan",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","250 g"],["घी","Ghee","500 g"],["धूपबत्ती","Dhoop","1"],["गुड़","Jaggery","100 g"],["दूध","Milk","200 g"],["दही","Curd","100 g"],["शहद","Honey","50 g"],["तिल","Sesame","100 g"],["हवन सामग्री","Havan mix","500 g"],["हवन की लकड़ी","Havan wood","1 kg"]]},
+  {k:"lakshmi-ganesh",hi:"दीपावली लक्ष्मी-गणेश",en:"Diwali Lakshmi-Ganesh",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","250 g"],["सिन्दूर","Sindoor","1 पैकेट"],["घी","Ghee","250 g"],["कपूर","Camphor","10 g"],["खील","Kheel","250 g"],["बतासे","Batashe","250 g"],["लक्ष्मी-गणेश प्रतिमा","Idol","1 जोड़ी"],["फल","Fruit","11 पीस"],["मिठाई","Sweets","500 g"],["नारियल","Coconut","1"],["मिट्टी के दीपक","Clay lamps","5+"]]},
+  {k:"sundarkand",hi:"सुन्दर काण्ड पूजा",en:"Sundarkand Path",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["पान के पत्ते","Betel leaves","5"],["फूल","Flowers","आवश्यक"],["घी","Ghee","200 g"],["दीया","Diya","2"],["नारियल","Coconut","1"],["दूध","Milk","100 g"],["मिठाई","Sweets","250 g"],["रामचरितमानस","Ramcharitmanas","1"]]},
+  {k:"nazar-havan",hi:"नज़र आदि हवन",en:"Nazar Aadi Havan",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["घी","Ghee","500 g"],["धूपबत्ती","Dhoop","1"],["हवन सामग्री","Havan mix","500 g"],["हवन की लकड़ी","Havan wood","1 kg"],["लोबान","Loban","50 g"],["गुग्गल","Guggul","50 g"],["कपूर","Camphor","20 g"],["पीली सरसों","Yellow mustard","50 g"]]},
+  {k:"rudrabhishek",hi:"रुद्राभिषेक",en:"Rudrabhishek",items:[["रोली","Roli","1 पैकेट"],["चावल","Rice","200 g"],["दूध","Milk","3 kg"],["दही","Curd","1 kg"],["शहद","Honey","500 g"],["घी","Ghee","500 g"],["बेलपत्र","Bel leaves","आवश्यक"],["फूल","Flowers","आवश्यक"],["नारियल","Coconut","2"],["गंगाजल","Gangajal","आवश्यक"],["मिठाई","Sweets","250 g"]]}
+];
+
+// Render puja cards from the single data source (always matches the lists)
+(function(){
+  var grid=document.getElementById('pujaGrid');
+  grid.innerHTML = PUJAS.map(function(p,i){
+    return '<div class="puja"><div class="hi">'+p.hi+'</div><div class="en">'+p.en+'</div>'+
+      '<div class="puja-btns">'+
+      '<button class="pbtn" onclick="openSamagri('+i+')">View List</button>'+
+      '<a class="pbtn pbtn-book" target="_blank" rel="noopener" href="https://wa.me/919810969791?text='+encodeURIComponent('Namaste Acharya ji, I would like to book '+p.en+' puja.')+'">Book</a>'+
+      '</div></div>';
+  }).join('');
+})();
+
+var curP=null;
+function openSamagri(i){
+  curP=PUJAS[i];
+  document.getElementById('mTitle').textContent=curP.hi;
+  document.getElementById('mItems').innerHTML=curP.items.map(function(it,idx){
+    return '<label class="m-item"><input type="checkbox"><span class="m-name"><span class="m-hi">'+it[0]+'</span><span class="m-en">'+it[1]+'</span></span><span class="m-qty">'+it[2]+'</span></label>';
+  }).join('');
+  document.getElementById('samagriModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeSamagri(){document.getElementById('samagriModal').classList.remove('open');document.body.style.overflow='';}
+function shareSamagri(){
+  if(!curP)return;
+  var msg='Puja Samagri - '+curP.en+'\n\n';
+  curP.items.forEach(function(it){msg+='• '+it[0]+' ('+it[1]+') - '+it[2]+'\n';});
+  msg+='\nBook this puja: +91 98109 69791';
+  window.open('https://wa.me/919810969791?text='+encodeURIComponent(msg),'_blank');
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSamagri();});
 </script>
 </body>
 </html>
