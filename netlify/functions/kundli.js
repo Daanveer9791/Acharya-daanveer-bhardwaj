@@ -15,20 +15,29 @@ exports.handler = async (event) => {
   // ---- 1) Resolve birthplace -> coordinates ----
   let lat, lon, placeFull = place, tzone = 5.5;
   try {
+    console.log('Geocoding:', place);
     const gr = await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name=' + encodeURIComponent(place));
     const gj = await gr.json();
-    if (gj && gj.results && gj.results[0]) {
+    console.log('Geocoding response:', gj);
+    
+    if (gj && gj.results && gj.results.length > 0) {
       const R = gj.results[0];
       lat = R.latitude; lon = R.longitude;
       placeFull = [R.name, R.admin1, R.country].filter(Boolean).join(', ');
+      console.log('Found:', placeFull, 'at', lat, lon);
+      
       if (R.country_code && R.country_code !== 'IN') {
         tzone = Math.round((lon / 15) * 2) / 2;
       }
+    } else {
+      console.log('No results in geocoding response');
     }
-  } catch (e) { /* fall through */ }
+  } catch (e) { 
+    console.error('Geocoding error:', e);
+  }
 
   if (lat == null || lon == null) {
-    return resp(422, { error: 'Could not find that place. Try "City, State" (e.g. Lucknow, UP).' });
+    return resp(422, { error: 'Could not find that place. Try "City, State" (e.g. Gurgaon, Haryana or Lucknow, Uttar Pradesh).' });
   }
 
   const API_KEY = process.env.ASTRO_API_KEY;
@@ -53,6 +62,8 @@ exports.handler = async (event) => {
     company_mobile: '+91-981-096-9791'
   };
 
+  console.log('Payload:', JSON.stringify(payload, null, 2));
+
   // ---- Call astrologyapi.com with Bearer token ----
   try {
     const r = await fetch('https://pdf.astrologyapi.com/v1/basic_horoscope_pdf', {
@@ -68,30 +79,27 @@ exports.handler = async (event) => {
     let j = null; 
     try { j = JSON.parse(text); } catch (e) {}
 
-    // DEBUG: Log what we got back
-    console.log('Status:', r.status);
-    console.log('Response:', text.slice(0, 500));
+    console.log('API Status:', r.status);
+    console.log('API Response:', text.slice(0, 800));
 
     if (!r.ok) {
       const errMsg = (j && (j.message || j.error || j.errors)) || text;
       return resp(r.status, { 
-        error: 'API Error: ' + errMsg,
-        status: r.status,
-        details: String(errMsg).slice(0, 500)
+        error: 'API Error: ' + String(errMsg).slice(0, 300)
       });
     }
 
     if (!j || !j.pdf_url) {
       return resp(502, { 
-        error: 'No PDF URL returned',
-        response: j,
-        rawText: text.slice(0, 300)
+        error: 'No PDF URL in response',
+        response: String(j).slice(0, 200)
       });
     }
 
     return resp(200, { pdf_url: j.pdf_url, place: placeFull });
 
   } catch (e) {
+    console.error('Fetch error:', e);
     return resp(500, { error: 'Request failed: ' + String(e) });
   }
 };
