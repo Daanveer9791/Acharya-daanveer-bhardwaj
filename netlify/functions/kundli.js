@@ -1,5 +1,4 @@
 // Netlify Function: Kundli PDF Generator via Prokerala API
-// Uses OAuth2 Client Credentials flow
 
 const CITIES = {
   'gurgaon': { lat: 28.4595, lon: 77.0266, name: 'Gurgaon, Haryana, India' },
@@ -19,6 +18,8 @@ const CITIES = {
 };
 
 exports.handler = async (event) => {
+  console.log('=== Kundli Function Start ===');
+  
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
@@ -40,7 +41,7 @@ exports.handler = async (event) => {
   }
 
   const placeKey = String(place).toLowerCase().trim().split(',')[0].trim();
-  console.log('Looking up city:', placeKey);
+  console.log('City lookup:', placeKey);
 
   if (!CITIES[placeKey]) {
     const availableCities = Object.keys(CITIES).map(k => k.charAt(0).toUpperCase() + k.slice(1)).join(', ');
@@ -55,56 +56,75 @@ exports.handler = async (event) => {
   const placeFull = city.name;
   const tzone = 5.5;
 
-  console.log('City found:', placeFull, 'coordinates:', lat, lon);
+  console.log('City found:', placeFull);
 
-  // Get Prokerala credentials
   const CLIENT_ID = process.env.PROKERALA_CLIENT_ID;
   const CLIENT_SECRET = process.env.PROKERALA_CLIENT_SECRET;
 
+  console.log('Checking credentials...');
   if (!CLIENT_ID || !CLIENT_SECRET) {
-    console.error('Missing Prokerala credentials');
+    console.error('Missing credentials');
     return { statusCode: 500, body: JSON.stringify({ 
-      error: 'Server configuration error' 
+      error: 'Server configuration error'
     })};
   }
 
-  console.log('Credentials present. Getting access token...');
+  console.log('✅ Credentials present. Getting token...');
 
-  // ---- Step 1: Get Access Token ----
+  // Try different token endpoints
+  const tokenEndpoints = [
+    'https://oauth.prokerala.com/oauth/token',
+    'https://api.prokerala.com/v2/oauth/token',
+    'https://api.prokerala.com/oauth/token'
+  ];
+
   let accessToken = null;
-  try {
-    const tokenResponse = await fetch('https://api.prokerala.com/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: 'grant_type=client_credentials&client_id=' + encodeURIComponent(CLIENT_ID) + 
-            '&client_secret=' + encodeURIComponent(CLIENT_SECRET)
-    });
 
-    const tokenData = await tokenResponse.json();
-    console.log('Token response status:', tokenResponse.status);
-    console.log('Token response:', JSON.stringify(tokenData).slice(0, 200));
+  for (const tokenUrl of tokenEndpoints) {
+    try {
+      console.log('Trying:', tokenUrl);
+      
+      const tokenResponse = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'grant_type=client_credentials&client_id=' + encodeURIComponent(CLIENT_ID) + 
+              '&client_secret=' + encodeURIComponent(CLIENT_SECRET)
+      });
 
-    if (!tokenResponse.ok || !tokenData.access_token) {
-      console.error('Failed to get access token:', tokenData);
-      return { statusCode: 401, body: JSON.stringify({ 
-        error: 'Authentication failed: ' + (tokenData.error || 'Unknown error')
-      })};
+      console.log('Status:', tokenResponse.status);
+      const text = await tokenResponse.text();
+      console.log('Response:', text.slice(0, 200));
+
+      let tokenData = {};
+      try {
+        tokenData = JSON.parse(text);
+      } catch (e) {
+        console.log('Not JSON, trying next endpoint...');
+        continue;
+      }
+
+      if (tokenResponse.ok && tokenData.access_token) {
+        accessToken = tokenData.access_token;
+        console.log('✅ Token acquired from', tokenUrl);
+        break;
+      }
+    } catch (e) {
+      console.log('Endpoint error:', String(e).slice(0, 100));
+      continue;
     }
+  }
 
-    accessToken = tokenData.access_token;
-    console.log('✅ Access token acquired');
-  } catch (e) {
-    console.error('Token error:', e);
-    return { statusCode: 500, body: JSON.stringify({ 
-      error: 'Failed to authenticate: ' + String(e).slice(0, 100)
+  if (!accessToken) {
+    console.error('❌ Could not get token from any endpoint');
+    return { statusCode: 401, body: JSON.stringify({ 
+      error: 'Authentication failed - could not get access token'
     })};
   }
 
-  // ---- Step 2: Generate PDF via Prokerala ----
+  // Generate PDF
   const lang = (language === 'en') ? 'en' : 'hi';
-
   const pdfPayload = {
     name: String(name).trim(),
     gender: String(gender || 'male').toLowerCase(),
@@ -121,15 +141,14 @@ exports.handler = async (event) => {
     chart_style: 'NORTH_INDIAN',
     footer_link: 'acharyadaanveer.netlify.app',
     company_name: 'Acharya Daanveer Bhardwaj',
-    company_info: 'Third-generation Vedic astrologer • Kundli • Matchmaking • Vastu • Puja • Dosha Nivaran. For consultation: +91 98109 69791',
+    company_info: 'Third-generation Vedic astrologer. Consultation: +91 98109 69791',
     domain_url: 'https://acharyadaanveer.netlify.app',
     company_email: 'daanveerbhardwaj@gmail.com',
     company_landline: '+91-981-096-9791',
     company_mobile: '+91-981-096-9791'
   };
 
-  console.log('Calling Prokerala PDF endpoint with access token...');
-
+  console.log('Calling PDF endpoint...');
   try {
     const pdfResponse = await fetch('https://api.prokerala.com/v2/report/personal-reading/instant', {
       method: 'POST',
@@ -140,22 +159,19 @@ exports.handler = async (event) => {
       body: JSON.stringify(pdfPayload)
     });
 
-    console.log('PDF Response status:', pdfResponse.status);
+    console.log('PDF response status:', pdfResponse.status);
 
-    // Prokerala returns PDF binary, not JSON
     if (!pdfResponse.ok) {
       const errText = await pdfResponse.text();
-      console.error('PDF generation failed:', errText.slice(0, 300));
+      console.error('PDF failed:', errText.slice(0, 300));
       return { statusCode: pdfResponse.status, body: JSON.stringify({ 
-        error: 'PDF generation failed: ' + errText.slice(0, 200)
+        error: 'PDF error: ' + errText.slice(0, 200)
       })};
     }
 
-    // Get the PDF as buffer
     const pdfBuffer = await pdfResponse.arrayBuffer();
-    console.log('✅ PDF generated successfully, size:', pdfBuffer.byteLength);
+    console.log('✅ PDF generated');
 
-    // Convert to base64 so we can return as data URL
     const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
     const pdfDataUrl = 'data:application/pdf;base64,' + pdfBase64;
 
@@ -169,12 +185,11 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('PDF Fetch Error:', error);
+    console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        error: 'PDF generation failed: ' + String(error).slice(0, 200)
+        error: 'Error: ' + String(error).slice(0, 200)
       })
     };
   }
