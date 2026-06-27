@@ -120,6 +120,9 @@ nav{position:sticky;top:0;z-index:40;background:rgba(15,27,60,.8);backdrop-filte
 .field label{display:block;font-size:13px;font-weight:600;color:var(--gold);margin-bottom:5px;text-shadow:0 0 10px rgba(212,175,55,.2);}
 .field input{width:100%;padding:11px 13px;border:1px solid rgba(212,175,55,.3);border-radius:9px;background:rgba(26,42,78,.5);font-family:'Mukta';font-size:14px;color:var(--text-light);transition:border-color .2s,box-shadow .2s;}
 .field input:focus{outline:none;border-color:var(--gold);background:rgba(26,42,78,.8);box-shadow:0 0 15px rgba(212,175,55,.3);}
+.field select,.kinput{width:100%;padding:11px 13px;border:1px solid rgba(212,175,55,.3);border-radius:9px;background:rgba(26,42,78,.7);font-family:'Mukta';font-size:14px;color:var(--text-light);cursor:pointer;}
+.field select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 15px rgba(212,175,55,.3);}
+.field select option{background:#1A2A4E;color:var(--text-light);}
 @media(max-width:780px){.kundli-grid{grid-template-columns:1fr;gap:26px;}}
 
 /* SERVICES */
@@ -232,6 +235,18 @@ footer .fc{font-size:11px;opacity:.6;}
 .modal-actions button{flex:1;min-width:120px;padding:11px;border:none;border-radius:999px;font-weight:600;cursor:pointer;}
 .m-wa{background:#25D366;color:#fff;}
 .m-print{background:linear-gradient(135deg,var(--saffron),var(--gold));color:#0F1B3C;}
+
+/* MONTHLY CALENDAR */
+.cal-months{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:22px 0;}
+.cal-m{padding:8px 14px;border-radius:999px;border:1.5px solid rgba(212,175,55,.25);background:rgba(26,42,78,.5);color:var(--text-soft);font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;}
+.cal-m:hover{border-color:var(--gold);color:var(--gold);}
+.cal-m.active{background:linear-gradient(135deg,var(--saffron),var(--gold));color:#0F1B3C;border-color:var(--gold);box-shadow:0 0 14px rgba(255,149,0,.4);}
+.cal-view{max-width:460px;margin:0 auto;text-align:center;}
+.cal-frame{border:2px solid var(--gold);border-radius:14px;overflow:hidden;box-shadow:0 0 30px rgba(212,175,55,.25),0 20px 50px -20px rgba(0,0,0,.6);background:#0c1530;min-height:260px;display:flex;align-items:center;justify-content:center;}
+.cal-frame img{width:100%;display:block;}
+.cal-placeholder{padding:50px 24px;color:var(--text-soft);}
+.cal-placeholder .ph-month{font-family:'Cormorant Garamond';font-weight:700;font-size:30px;color:var(--gold);text-shadow:var(--glow-gold);margin-bottom:8px;}
+.cal-dl{margin-top:18px;}
 </style>
 </head>
 <body>
@@ -243,7 +258,7 @@ footer .fc{font-size:11px;opacity:.6;}
     <div class="brand"><b>Acharya Daanveer Bhardwaj</b><span>Vedic Astrologer</span></div>
     <div class="nav-links">
       <a href="#kundli">Free Kundli</a>
-      <a href="#panchang">Panchang</a>
+      <a href="#calendar">Calendar</a>
       <a href="#services">Services</a>
       <a href="#puja">Puja</a>
       <a class="btn btn-primary" href="https://wa.me/919810969791?text=Namaste%20Acharya%20ji" target="_blank" rel="noopener">WhatsApp</a>
@@ -293,35 +308,39 @@ footer .fc{font-size:11px;opacity:.6;}
           <svg viewBox="0 0 220 220"><g fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="6" width="208" height="208"/><path d="M6 6 214 214M214 6 6 214"/><path d="M110 6 214 110 110 214 6 110Z"/></g></svg>
         </div>
         <div class="kundli-form">
-          <div class="field"><label>Full Name</label><input type="text" placeholder="Your name"></div>
+          <div class="field"><label>Full Name</label><input id="kName" type="text" placeholder="Your name"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div class="field"><label>Date of Birth</label><input type="date"></div>
-            <div class="field"><label>Time of Birth</label><input type="time"></div>
+            <div class="field"><label>Gender</label><select id="kGender" class="kinput"><option value="male">Male</option><option value="female">Female</option></select></div>
+            <div class="field"><label>Report Language</label><select id="kLang" class="kinput"><option value="hi">हिन्दी (Hindi)</option><option value="en">English</option></select></div>
           </div>
-          <div class="field"><label>Place of Birth</label><input type="text" placeholder="City, State"></div>
-          <button class="btn btn-primary" style="justify-content:center;margin-top:6px;">Generate Free Kundli</button>
-          <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-shadow:0 0 8px rgba(212,175,55,.1);">Powered by VedAstro · accurate Swiss Ephemeris data</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field"><label>Date of Birth</label><input id="kDob" type="date"></div>
+            <div class="field"><label>Time of Birth</label><input id="kTob" type="time"></div>
+          </div>
+          <div class="field"><label>Place of Birth</label><input id="kPlace" type="text" placeholder="City, State (e.g. Lucknow, UP)"></div>
+          <button id="kBtn" class="btn btn-primary" style="justify-content:center;margin-top:6px;" onclick="generateKundli()">Generate Free Kundli</button>
+          <div id="kMsg" style="font-size:13px;color:var(--text-soft);margin-top:10px;min-height:18px;"></div>
+          <div id="kResult" style="display:none;margin-top:10px;"></div>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Free &amp; fully branded — a complete report by Acharya Daanveer Bhardwaj.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- PANCHANG -->
-<section class="section" id="panchang">
+<!-- CALENDAR -->
+<section class="section" id="calendar">
   <div class="wrap">
-    <div class="card panchang panel reveal">
-      <div class="ph-head">
-        <div><div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-2);margin-bottom:4px;">आज का पंचांग</div><h3>Today's Panchang</h3></div>
-        <div style="text-align:right;"><div class="ph-date" id="phDate">—</div><span class="ph-tag" id="phTag">loading…</span></div>
+    <div class="card panel reveal">
+      <div style="text-align:center;margin-bottom:6px;">
+        <div style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-2);margin-bottom:10px;">मासिक कैलेंडर · Monthly Calendar</div>
+        <h2 style="font-size:clamp(26px,4.5vw,40px);color:var(--gold);line-height:1.1;text-shadow:0 0 22px rgba(212,175,55,.4);">Acharya ji's Calendar</h2>
+        <p style="font-size:14px;color:var(--text-soft);max-width:56ch;margin:10px auto 0;line-height:1.7;">Tithi, vrat &amp; festival calendar with Acharya ji's blessings. Tap any month to view — it opens on the current month automatically.</p>
       </div>
-      <div class="ph-grid">
-        <div class="ph-cell"><small>वार · Day</small><b id="phVaar">—</b></div>
-        <div class="ph-cell"><small>तिथि · Tithi</small><b id="phTithi">…</b></div>
-        <div class="ph-cell"><small>नक्षत्र · Nakshatra</small><b id="phNak">…</b></div>
-        <div class="ph-cell"><small>योग · Yoga</small><b id="phYoga">…</b></div>
-        <div class="ph-cell"><small>करण · Karana</small><b id="phKaran">…</b></div>
-        <div class="ph-cell"><small>स्थान</small><b style="font-family:Mukta;font-size:13px;">Gurgaon</b></div>
+      <div class="cal-months" id="calMonths"></div>
+      <div class="cal-view">
+        <div class="cal-frame" id="calFrame"></div>
+        <a class="btn btn-primary cal-dl" id="calDl" download style="display:none;">⬇️ Download / Save</a>
       </div>
     </div>
   </div>
@@ -343,7 +362,7 @@ footer .fc{font-size:11px;opacity:.6;}
       <div class="svc reveal"><h3>Dosha Nivaran</h3><div class="hi">दोष निवारण</div><p>Remedies for Mangal, Kaal Sarp, Pitra & Shani dosha.</p><div class="svc-foot"><span class="svc-price">On enquiry</span><a href="https://wa.me/919810969791?text=Dosha" target="_blank" rel="noopener" style="color:var(--saffron);font-weight:600;font-size:12px;text-shadow:0 0 8px rgba(255,149,0,.3);">Enquire →</a></div></div>
       <div class="svc reveal"><h3>Puja & Havan</h3><div class="hi">पूजा एवं हवन</div><p>Satyanarayan, Rudrabhishek, Griha Pravesh & more.</p><div class="svc-foot"><span class="svc-price">On enquiry</span><a href="https://wa.me/919810969791?text=Puja" target="_blank" rel="noopener" style="color:var(--saffron);font-weight:600;font-size:12px;text-shadow:0 0 8px rgba(255,149,0,.3);">Enquire →</a></div></div>
       <div class="svc reveal"><h3>Astrology Courses</h3><div class="hi">ज्योतिष कक्षाएँ</div><p>Jyotish Praveen & Visharad — learn authentic astrology.</p><div class="svc-foot"><span class="svc-price">On enquiry</span><a href="https://wa.me/919810969791?text=Courses" target="_blank" rel="noopener" style="color:var(--saffron);font-weight:600;font-size:12px;text-shadow:0 0 8px rgba(255,149,0,.3);">Enquire →</a></div></div>
-      <div class="svc reveal"><h3>Tarot Reading</h3><div class="hi">टैरो रीडिंग</div><p>Quick, focused guidance for specific questions.</p><div class="svc-foot"><span class="svc-price">On enquiry</span><a href="https://wa.me/919810969791?text=Tarot" target="_blank" rel="noopener" style="color:var(--saffron);font-weight:600;font-size:12px;text-shadow:0 0 8px rgba(255,149,0,.3);">Enquire →</a></div></div>
+      
     </div>
   </div>
 </section>
@@ -398,49 +417,35 @@ footer .fc{font-size:11px;opacity:.6;}
 </a>
 
 <script>
-var d=new Date();
-document.getElementById('phDate').textContent=d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-document.getElementById('phVaar').textContent=['रविवार','सोमवार','मंगलवार','बुधवार','गुरुवार','शुक्रवार','शनिवार'][d.getDay()];
+// ===== MONTHLY CALENDAR (auto current month) =====
+(function(){
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var keys=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  var now=new Date();
+  var monthsEl=document.getElementById('calMonths');
+  var frame=document.getElementById('calFrame');
+  var dl=document.getElementById('calDl');
 
-// ===== LIVE PANCHANG via VedAstro (free tier, no key) =====
-(function loadPanchang(){
-  var lat=28.4595, lng=77.0266;           // Gurgaon
-  var dd=String(d.getDate()).padStart(2,'0');
-  var mm=String(d.getMonth()+1).padStart(2,'0');
-  var yyyy=d.getFullYear();
-  var dateStr=dd+'-'+mm+'-'+yyyy;
-  var base='https://api.vedastro.org/api/Calculate';
-  var loc=lat+','+lng, tz='+05:30';
-  var map={ LunarDay:'phTithi', MoonConstellation:'phNak', Yoga:'phYoga', Karana:'phKaran' };
-  var done=0, ok=0, total=Object.keys(map).length;
+  monthsEl.innerHTML=months.map(function(m,i){
+    return '<button class="cal-m" data-i="'+i+'">'+m.slice(0,3)+'</button>';
+  }).join('');
 
-  function finish(){
-    var tag=document.getElementById('phTag');
-    if(tag) tag.textContent = ok>0 ? 'live' : 'sample';
+  function show(i){
+    Array.prototype.forEach.call(monthsEl.children,function(b){b.classList.toggle('active', (+b.dataset.i)===i);});
+    var src='calendar/'+keys[i]+'.jpg';
+    var img=new Image();
+    img.alt=months[i]+' calendar - Acharya Daanveer Bhardwaj';
+    img.onload=function(){ frame.innerHTML=''; frame.appendChild(img); dl.style.display='inline-flex'; dl.href=src; };
+    img.onerror=function(){
+      frame.innerHTML='<div class="cal-placeholder"><div class="ph-month">'+months[i]+' '+now.getFullYear()+'</div><div>Calendar image coming soon</div></div>';
+      dl.style.display='none';
+    };
+    img.src=src;
   }
-  function setVal(id,val){
-    var el=document.getElementById(id);
-    if(el && val){ el.textContent=val; el.style.fontFamily='Mukta'; }
-  }
-  function fetchOne(method){
-    var url=base+'/'+method+'/Location/'+loc+'/Time/12:00/'+dateStr+'/'+tz+'/Ayanamsa/LAHIRI';
-    var ctrl=new AbortController();
-    var t=setTimeout(function(){ctrl.abort();},9000);
-    fetch(url,{signal:ctrl.signal})
-      .then(function(r){return r.json();})
-      .then(function(j){
-        clearTimeout(t);
-        var v = j && j.Payload ? j.Payload[method] : null;
-        if(v && typeof v==='object'){
-          v = v.Name || v.NameStr ||
-              Object.values(v).find(function(x){return typeof x==='string';}) || null;
-        }
-        if(v){ setVal(map[method], String(v)); ok++; }
-      })
-      .catch(function(){ clearTimeout(t); })
-      .finally(function(){ done++; if(done===total) finish(); });
-  }
-  Object.keys(map).forEach(fetchOne);
+  Array.prototype.forEach.call(monthsEl.children,function(b){
+    b.addEventListener('click',function(){show(+b.dataset.i);});
+  });
+  show(now.getMonth()); // auto-open current month
 })();
 
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
@@ -454,7 +459,7 @@ document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
     <div class="modal-body">
       <div id="mItems"></div>
       <div class="modal-actions">
-        <button class="m-wa" onclick="shareSamagri()">📞 Send on WhatsApp</button>
+        <button class="m-wa" onclick="shareSamagri()">📤 Share my list (WhatsApp)</button>
         <button class="m-print" onclick="window.print()">🖨️ Print</button>
       </div>
     </div>
@@ -495,21 +500,70 @@ var curP=null;
 function openSamagri(i){
   curP=PUJAS[i];
   document.getElementById('mTitle').textContent=curP.hi;
+  var saved=[];
+  try{ saved=JSON.parse(localStorage.getItem('samagri_'+curP.k)||'[]'); }catch(e){}
   document.getElementById('mItems').innerHTML=curP.items.map(function(it,idx){
-    return '<label class="m-item"><input type="checkbox"><span class="m-name"><span class="m-hi">'+it[0]+'</span><span class="m-en">'+it[1]+'</span></span><span class="m-qty">'+it[2]+'</span></label>';
+    var chk=saved.indexOf(idx)>-1?' checked':'';
+    return '<label class="m-item"><input type="checkbox" data-idx="'+idx+'" onchange="saveTicks()"'+chk+'><span class="m-name"><span class="m-hi">'+it[0]+'</span><span class="m-en">'+it[1]+'</span></span><span class="m-qty">'+it[2]+'</span></label>';
   }).join('');
   document.getElementById('samagriModal').classList.add('open');
   document.body.style.overflow='hidden';
 }
+function saveTicks(){
+  if(!curP)return;
+  var checked=[];
+  document.querySelectorAll('#mItems input:checked').forEach(function(cb){checked.push(+cb.dataset.idx);});
+  try{ localStorage.setItem('samagri_'+curP.k, JSON.stringify(checked)); }catch(e){}
+}
 function closeSamagri(){document.getElementById('samagriModal').classList.remove('open');document.body.style.overflow='';}
 function shareSamagri(){
   if(!curP)return;
-  var msg='Puja Samagri - '+curP.en+'\n\n';
-  curP.items.forEach(function(it){msg+='• '+it[0]+' ('+it[1]+') - '+it[2]+'\n';});
-  msg+='\nBook this puja: +91 98109 69791';
-  window.open('https://wa.me/919810969791?text='+encodeURIComponent(msg),'_blank');
+  var checks=document.querySelectorAll('#mItems input');
+  var got=[], need=[];
+  curP.items.forEach(function(it,idx){
+    var line=it[0]+' ('+it[1]+') - '+it[2];
+    if(checks[idx] && checks[idx].checked){ got.push(line); } else { need.push(line); }
+  });
+  var msg='*'+curP.en+' - Samagri List*\n('+got.length+'/'+curP.items.length+' ready)\n\n';
+  if(need.length){ msg+='⏳ Still to buy:\n'; need.forEach(function(l){ msg+='☐ '+l+'\n'; }); msg+='\n'; }
+  if(got.length){ msg+='✅ Already have:\n'; got.forEach(function(l){ msg+='☑ '+l+'\n'; }); msg+='\n'; }
+  msg+='— Acharya Daanveer Bhardwaj | +91 98109 69791';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSamagri();});
+</script>
+<script>
+async function generateKundli(){
+  var g=function(id){return document.getElementById(id);};
+  var name=g('kName').value.trim(), gender=g('kGender').value, lang=g('kLang').value,
+      dob=g('kDob').value, tob=g('kTob').value, place=g('kPlace').value.trim();
+  var msg=g('kMsg'), res=g('kResult'), btn=g('kBtn');
+  res.style.display='none'; res.innerHTML='';
+  if(!name||!dob||!tob||!place){ msg.style.color='#ffb4a2'; msg.textContent='Please fill in name, date, time and place of birth.'; return; }
+  var d=dob.split('-'), t=tob.split(':');
+  var payload={ name:name, gender:gender, language:lang,
+    year:+d[0], month:+d[1], day:+d[2], hour:+t[0], min:+t[1], place:place };
+  btn.disabled=true; var old=btn.textContent; btn.textContent='Generating…';
+  msg.style.color='var(--text-soft)';
+  msg.textContent='\uD83D\uDD2E Casting the chart and preparing your branded report (a few seconds)…';
+  try{
+    var r=await fetch('/.netlify/functions/kundli',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok || !j.pdf_url){
+      msg.style.color='#ffb4a2';
+      msg.textContent='\u26A0\uFE0F '+(j.error||'Could not generate the report right now. Please try again, or message us on WhatsApp.');
+    } else {
+      msg.style.color='#7CFFB0'; msg.textContent='\u2705 Your Kundli is ready!';
+      var wa='https://wa.me/?text='+encodeURIComponent('My free Kundli from Acharya Daanveer Bhardwaj \u2014 '+j.pdf_url);
+      res.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;">'
+        +'<a class="btn btn-primary" target="_blank" rel="noopener" href="'+j.pdf_url+'">\uD83D\uDCC4 View / Download PDF</a>'
+        +'<a class="btn btn-wa" target="_blank" rel="noopener" href="'+wa+'">\uD83D\uDCE4 Send on WhatsApp</a>'
+        +'</div>';
+      res.style.display='block';
+    }
+  }catch(e){ msg.style.color='#ffb4a2'; msg.textContent='\u26A0\uFE0F Network error. Please try again.'; }
+  btn.disabled=false; btn.textContent=old;
+}
 </script>
 </body>
 </html>
