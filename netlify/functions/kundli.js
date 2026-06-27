@@ -1,5 +1,5 @@
 // Netlify Function: Kundli PDF Generator via Prokerala API
-// 46 Major Indian Cities - shows nearest matches only
+// With detailed error logging
 
 const CITIES = {
   'gurgaon': { lat: 28.4595, lon: 77.0266, name: 'Gurgaon, Haryana, India' },
@@ -50,25 +50,16 @@ const CITIES = {
   'raipur': { lat: 21.2514, lon: 81.6296, name: 'Raipur, Chhattisgarh, India' }
 };
 
-// Find nearest city matches
 function findNearestCities(typed, maxResults = 5) {
   const typed_lower = typed.toLowerCase();
+  if (CITIES[typed_lower]) return [typed_lower];
   
-  // Exact match
-  if (CITIES[typed_lower]) {
-    return [typed_lower];
-  }
-  
-  // Find similar matches (contains or close spelling)
   const matches = Object.keys(CITIES).filter(key => {
     return key.includes(typed_lower) || typed_lower.includes(key);
   });
   
-  if (matches.length > 0) {
-    return matches.slice(0, maxResults);
-  }
+  if (matches.length > 0) return matches.slice(0, maxResults);
   
-  // Levenshtein distance for close matches
   const scored = Object.keys(CITIES).map(key => {
     const dist = levenshteinDistance(typed_lower, key);
     return { key, dist };
@@ -77,7 +68,6 @@ function findNearestCities(typed, maxResults = 5) {
   return scored.map(s => s.key);
 }
 
-// Simple Levenshtein distance
 function levenshteinDistance(a, b) {
   const matrix = [];
   for (let i = 0; i <= b.length; i++) matrix[i] = [i];
@@ -123,7 +113,7 @@ exports.handler = async (event) => {
 
   if (!CITIES[placeKey]) {
     const nearest = findNearestCities(placeKey, 5);
-    const suggestions = nearest.map(k => Object.keys(CITIES).includes(k) ? CITIES[k].name.split(',')[0] : k).join(', ');
+    const suggestions = nearest.map(k => CITIES[k].name.split(',')[0]).join(', ');
     return { statusCode: 422, body: JSON.stringify({ 
       error: 'City not found. Did you mean: ' + suggestions + '?'
     })};
@@ -139,13 +129,12 @@ exports.handler = async (event) => {
   const CLIENT_SECRET = process.env.PROKERALA_CLIENT_SECRET;
 
   if (!CLIENT_ID || !CLIENT_SECRET) {
-    return { statusCode: 500, body: JSON.stringify({ 
-      error: 'Server configuration error'
-    })};
+    return { statusCode: 500, body: JSON.stringify({ error: 'Server configuration error' })};
   }
 
   let accessToken = null;
   try {
+    console.log('Step 1: Getting access token...');
     const tokenResponse = await fetch('https://api.prokerala.com/token', {
       method: 'POST',
       headers: {
@@ -156,20 +145,22 @@ exports.handler = async (event) => {
     });
 
     const tokenText = await tokenResponse.text();
+    console.log('Token response status:', tokenResponse.status);
+    console.log('Token response body:', tokenText.slice(0, 200));
+    
     const tokenData = JSON.parse(tokenText);
 
     if (!tokenResponse.ok || !tokenData.access_token) {
-      return { statusCode: 401, body: JSON.stringify({ 
-        error: 'Authentication failed'
-      })};
+      console.error('Token error:', tokenData);
+      return { statusCode: 401, body: JSON.stringify({ error: 'Authentication failed' })};
     }
 
     accessToken = tokenData.access_token;
+    console.log('✅ Token acquired');
 
   } catch (error) {
-    return { statusCode: 500, body: JSON.stringify({ 
-      error: 'Authentication error'
-    })};
+    console.error('Token error:', error);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Authentication error' })};
   }
 
   const lang = (language === 'en') ? 'en' : 'hi';
@@ -191,46 +182,76 @@ exports.handler = async (event) => {
     company_name: 'Acharya Daanveer Bhardwaj',
     company_info: 'Third-generation Vedic astrologer. Consultation: +91 98109 69791',
     domain_url: 'https://acharyadaanveer.netlify.app',
-    company_email: 'daanveerbhardwaj@gmail.com',
-    company_landline: '+91-981-096-9791',
-    company_mobile: '+91-981-096-9791'
+    company_email: 'daanveerbhardwaj@gmail.com'
   };
 
   try {
+    console.log('Step 2: Calling PDF endpoint...');
+    console.log('Payload:', JSON.stringify(pdfPayload));
+    
     const pdfResponse = await fetch('https://api.prokerala.com/v2/report/personal-reading/instant', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + accessToken,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(pdfPayload)
     });
 
+    console.log('PDF response status:', pdfResponse.status);
+    console.log('PDF response headers:', JSON.stringify(Object.fromEntries(pdfResponse.headers)));
+    
+    const responseText = await pdfResponse.text();
+    console.log('PDF response body (first 500 chars):', responseText.slice(0, 500));
+
     if (!pdfResponse.ok) {
+      console.error('❌ PDF generation failed');
       return { statusCode: pdfResponse.status, body: JSON.stringify({ 
-        error: 'PDF generation failed'
+        error: 'Prokerala error: ' + responseText.slice(0, 200)
       })};
     }
 
-    const pdfBuffer = await pdfResponse.arrayBuffer();
-    const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
-    const pdfDataUrl = 'data:application/pdf;base64,' + pdfBase64;
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        pdf_url: pdfDataUrl,
-        place: placeFull
-      })
-    };
+    // Check if response is PDF (binary) or JSON
+    if (responseText.slice(0, 4) === '%PDF') {
+      console.log('✅ PDF received (binary)');
+      const pdfBase64 = Buffer.from(responseText, 'binary').toString('base64');
+      const pdfDataUrl = 'data:application/pdf;base64,' + pdfBase64;
+      
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          pdf_url: pdfDataUrl,
+          place: placeFull
+        })
+      };
+    } else {
+      console.log('Response is JSON, checking for pdf_url...');
+      try {
+        const jsonData = JSON.parse(responseText);
+        if (jsonData.pdf_url || jsonData.url) {
+          const pdfUrl = jsonData.pdf_url || jsonData.url;
+          console.log('✅ PDF URL received:', pdfUrl);
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              pdf_url: pdfUrl,
+              place: placeFull
+            })
+          };
+        }
+      } catch (e) {}
+      
+      return { statusCode: 502, body: JSON.stringify({ error: 'Unexpected response format' })};
+    }
 
   } catch (error) {
+    console.error('❌ Fetch error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
-        error: 'Error generating PDF'
-      })
+      body: JSON.stringify({ error: 'Error: ' + String(error).slice(0, 200) })
     };
   }
 };
