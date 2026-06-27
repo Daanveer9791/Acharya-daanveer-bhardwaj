@@ -1,5 +1,5 @@
 // Netlify Function: Kundli PDF Generator via Prokerala API
-// With detailed error logging
+// Correct payload format per Prokerala documentation
 
 const CITIES = {
   'gurgaon': { lat: 28.4595, lon: 77.0266, name: 'Gurgaon, Haryana, India' },
@@ -53,18 +53,12 @@ const CITIES = {
 function findNearestCities(typed, maxResults = 5) {
   const typed_lower = typed.toLowerCase();
   if (CITIES[typed_lower]) return [typed_lower];
-  
-  const matches = Object.keys(CITIES).filter(key => {
-    return key.includes(typed_lower) || typed_lower.includes(key);
-  });
-  
+  const matches = Object.keys(CITIES).filter(key => key.includes(typed_lower) || typed_lower.includes(key));
   if (matches.length > 0) return matches.slice(0, maxResults);
-  
   const scored = Object.keys(CITIES).map(key => {
     const dist = levenshteinDistance(typed_lower, key);
     return { key, dist };
   }).sort((a, b) => a.dist - b.dist).slice(0, maxResults);
-  
   return scored.map(s => s.key);
 }
 
@@ -77,16 +71,15 @@ function levenshteinDistance(a, b) {
       if (b.charAt(i - 1) === a.charAt(j - 1)) {
         matrix[i][j] = matrix[i - 1][j - 1];
       } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
+        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
       }
     }
   }
   return matrix[b.length][a.length];
 }
+
+// Pad numbers with leading zero
+function pad(n) { return n < 10 ? '0' + n : n; }
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -94,19 +87,13 @@ exports.handler = async (event) => {
   }
 
   let body = {};
-  try {
-    body = JSON.parse(event.body || '{}');
-  } catch (e) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request' }) };
-  }
+  try { body = JSON.parse(event.body || '{}'); }
+  catch (e) { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request' }) }; }
 
   const { name, gender, day, month, year, hour, min, place, language } = body;
 
-  if (!name || !place || day === undefined || month === undefined || year === undefined || 
-      hour === undefined || min === undefined) {
-    return { statusCode: 400, body: JSON.stringify({ 
-      error: 'Missing fields required' 
-    })};
+  if (!name || !place || day === undefined || month === undefined || year === undefined || hour === undefined || min === undefined) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Missing fields required' })};
   }
 
   const placeKey = String(place).toLowerCase().trim().split(',')[0].trim();
@@ -114,16 +101,13 @@ exports.handler = async (event) => {
   if (!CITIES[placeKey]) {
     const nearest = findNearestCities(placeKey, 5);
     const suggestions = nearest.map(k => CITIES[k].name.split(',')[0]).join(', ');
-    return { statusCode: 422, body: JSON.stringify({ 
-      error: 'City not found. Did you mean: ' + suggestions + '?'
-    })};
+    return { statusCode: 422, body: JSON.stringify({ error: 'City not found. Did you mean: ' + suggestions + '?' })};
   }
 
   const city = CITIES[placeKey];
   const lat = city.lat;
   const lon = city.lon;
   const placeFull = city.name;
-  const tzone = 5.5;
 
   const CLIENT_ID = process.env.PROKERALA_CLIENT_ID;
   const CLIENT_SECRET = process.env.PROKERALA_CLIENT_SECRET;
@@ -134,24 +118,18 @@ exports.handler = async (event) => {
 
   let accessToken = null;
   try {
-    console.log('Step 1: Getting access token...');
+    console.log('Getting access token...');
     const tokenResponse = await fetch('https://api.prokerala.com/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: 'grant_type=client_credentials&client_id=' + encodeURIComponent(CLIENT_ID) + 
-            '&client_secret=' + encodeURIComponent(CLIENT_SECRET)
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'grant_type=client_credentials&client_id=' + encodeURIComponent(CLIENT_ID) + '&client_secret=' + encodeURIComponent(CLIENT_SECRET)
     });
 
     const tokenText = await tokenResponse.text();
-    console.log('Token response status:', tokenResponse.status);
-    console.log('Token response body:', tokenText.slice(0, 200));
-    
     const tokenData = JSON.parse(tokenText);
 
     if (!tokenResponse.ok || !tokenData.access_token) {
-      console.error('Token error:', tokenData);
+      console.error('Token failed:', tokenData);
       return { statusCode: 401, body: JSON.stringify({ error: 'Authentication failed' })};
     }
 
@@ -163,95 +141,79 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Authentication error' })};
   }
 
+  // Build datetime in ISO format: YYYY-MM-DDTHH:mm:ss+05:30
+  const dateStr = pad(year) + '-' + pad(month) + '-' + pad(day) + 'T' + pad(hour) + ':' + pad(min) + ':00+05:30';
+  const coordinates = lat + ',' + lon;
   const lang = (language === 'en') ? 'en' : 'hi';
+
+  // Correct Prokerala payload format
   const pdfPayload = {
-    name: String(name).trim(),
-    gender: String(gender || 'male').toLowerCase(),
-    day: parseInt(day),
-    month: parseInt(month),
-    year: parseInt(year),
-    hour: parseInt(hour),
-    min: parseInt(min),
-    lat: lat,
-    lon: lon,
-    tzone: tzone,
-    place: placeFull,
-    language: lang,
-    chart_style: 'NORTH_INDIAN',
-    footer_link: 'acharyadaanveer.netlify.app',
-    company_name: 'Acharya Daanveer Bhardwaj',
-    company_info: 'Third-generation Vedic astrologer. Consultation: +91 98109 69791',
-    domain_url: 'https://acharyadaanveer.netlify.app',
-    company_email: 'daanveerbhardwaj@gmail.com'
+    input: {
+      first_name: String(name).trim(),
+      gender: String(gender || 'male').toLowerCase(),
+      datetime: dateStr,
+      coordinates: coordinates,
+      place: placeFull
+    },
+    options: {
+      report: {
+        brand_name: 'Acharya Daanveer Bhardwaj',
+        name: 'Basic Horoscope',
+        caption: 'Generated by Acharya Daanveer',
+        la: lang
+      },
+      template: {
+        footer: 'acharyadaanveer.netlify.app',
+        style: 'vedic-astro-green'
+      },
+      modules: [
+        {
+          name: 'single-page-horoscope',
+          options: { chart_style: 'north-indian' }
+        }
+      ]
+    }
   };
 
   try {
-    console.log('Step 2: Calling PDF endpoint...');
+    console.log('Calling PDF endpoint with correct format...');
     console.log('Payload:', JSON.stringify(pdfPayload));
-    
+
     const pdfResponse = await fetch('https://api.prokerala.com/v2/report/personal-reading/instant', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + accessToken,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(pdfPayload)
     });
 
     console.log('PDF response status:', pdfResponse.status);
-    console.log('PDF response headers:', JSON.stringify(Object.fromEntries(pdfResponse.headers)));
-    
+
     const responseText = await pdfResponse.text();
-    console.log('PDF response body (first 500 chars):', responseText.slice(0, 500));
+    console.log('PDF response (first 500 chars):', responseText.slice(0, 500));
 
     if (!pdfResponse.ok) {
-      console.error('❌ PDF generation failed');
-      return { statusCode: pdfResponse.status, body: JSON.stringify({ 
-        error: 'Prokerala error: ' + responseText.slice(0, 200)
-      })};
+      return { statusCode: pdfResponse.status, body: JSON.stringify({ error: 'Prokerala: ' + responseText.slice(0, 300) })};
     }
 
-    // Check if response is PDF (binary) or JSON
+    // Response is PDF binary
     if (responseText.slice(0, 4) === '%PDF') {
-      console.log('✅ PDF received (binary)');
+      console.log('✅ PDF received');
       const pdfBase64 = Buffer.from(responseText, 'binary').toString('base64');
       const pdfDataUrl = 'data:application/pdf;base64,' + pdfBase64;
       
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          pdf_url: pdfDataUrl,
-          place: placeFull
-        })
+        body: JSON.stringify({ pdf_url: pdfDataUrl, place: placeFull })
       };
-    } else {
-      console.log('Response is JSON, checking for pdf_url...');
-      try {
-        const jsonData = JSON.parse(responseText);
-        if (jsonData.pdf_url || jsonData.url) {
-          const pdfUrl = jsonData.pdf_url || jsonData.url;
-          console.log('✅ PDF URL received:', pdfUrl);
-          return {
-            statusCode: 200,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              pdf_url: pdfUrl,
-              place: placeFull
-            })
-          };
-        }
-      } catch (e) {}
-      
-      return { statusCode: 502, body: JSON.stringify({ error: 'Unexpected response format' })};
     }
 
+    return { statusCode: 502, body: JSON.stringify({ error: 'Unexpected response format' })};
+
   } catch (error) {
-    console.error('❌ Fetch error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Error: ' + String(error).slice(0, 200) })
-    };
+    console.error('Fetch error:', error);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Error: ' + String(error).slice(0, 200) })};
   }
 };
