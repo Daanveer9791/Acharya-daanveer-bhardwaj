@@ -1,5 +1,5 @@
-// Netlify Function: Kundli PDF Generator via astrologyapi.com
-// Uses Basic Auth with User ID + API Key
+// Netlify Function: Kundli PDF Generator via Prokerala API
+// Uses OAuth2 Client Credentials flow
 
 const CITIES = {
   'gurgaon': { lat: 28.4595, lon: 77.0266, name: 'Gurgaon, Haryana, India' },
@@ -57,22 +57,55 @@ exports.handler = async (event) => {
 
   console.log('City found:', placeFull, 'coordinates:', lat, lon);
 
-  // Get credentials from environment
-  const USER_ID = process.env.ASTRO_USER_ID;
-  const API_KEY = process.env.ASTRO_API_KEY;
+  // Get Prokerala credentials
+  const CLIENT_ID = process.env.PROKERALA_CLIENT_ID;
+  const CLIENT_SECRET = process.env.PROKERALA_CLIENT_SECRET;
 
-  if (!USER_ID || !API_KEY) {
-    console.error('Missing credentials - USER_ID:', !!USER_ID, 'API_KEY:', !!API_KEY);
+  if (!CLIENT_ID || !CLIENT_SECRET) {
+    console.error('Missing Prokerala credentials');
     return { statusCode: 500, body: JSON.stringify({ 
-      error: 'Server configuration error (missing credentials)' 
+      error: 'Server configuration error' 
     })};
   }
 
-  console.log('Credentials present. USER_ID length:', String(USER_ID).length, 'API_KEY length:', String(API_KEY).length);
+  console.log('Credentials present. Getting access token...');
 
+  // ---- Step 1: Get Access Token ----
+  let accessToken = null;
+  try {
+    const tokenResponse = await fetch('https://api.prokerala.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials&client_id=' + encodeURIComponent(CLIENT_ID) + 
+            '&client_secret=' + encodeURIComponent(CLIENT_SECRET)
+    });
+
+    const tokenData = await tokenResponse.json();
+    console.log('Token response status:', tokenResponse.status);
+    console.log('Token response:', JSON.stringify(tokenData).slice(0, 200));
+
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      console.error('Failed to get access token:', tokenData);
+      return { statusCode: 401, body: JSON.stringify({ 
+        error: 'Authentication failed: ' + (tokenData.error || 'Unknown error')
+      })};
+    }
+
+    accessToken = tokenData.access_token;
+    console.log('✅ Access token acquired');
+  } catch (e) {
+    console.error('Token error:', e);
+    return { statusCode: 500, body: JSON.stringify({ 
+      error: 'Failed to authenticate: ' + String(e).slice(0, 100)
+    })};
+  }
+
+  // ---- Step 2: Generate PDF via Prokerala ----
   const lang = (language === 'en') ? 'en' : 'hi';
 
-  const payload = {
+  const pdfPayload = {
     name: String(name).trim(),
     gender: String(gender || 'male').toLowerCase(),
     day: parseInt(day),
@@ -87,76 +120,61 @@ exports.handler = async (event) => {
     language: lang,
     chart_style: 'NORTH_INDIAN',
     footer_link: 'acharyadaanveer.netlify.app',
-    logo_url: '',
     company_name: 'Acharya Daanveer Bhardwaj',
-    company_info: 'Third-generation Vedic astrologer, Gurgaon. Kundli • Matchmaking • Vastu • Puja • Dosha Nivaran. Consultation: +91 98109 69791',
+    company_info: 'Third-generation Vedic astrologer • Kundli • Matchmaking • Vastu • Puja • Dosha Nivaran. For consultation: +91 98109 69791',
     domain_url: 'https://acharyadaanveer.netlify.app',
     company_email: 'daanveerbhardwaj@gmail.com',
     company_landline: '+91-981-096-9791',
     company_mobile: '+91-981-096-9791'
   };
 
-  console.log('Payload ready. Calling astrologyapi with Basic Auth');
+  console.log('Calling Prokerala PDF endpoint with access token...');
 
   try {
-    // Build Basic Auth header: Base64(USER_ID:API_KEY)
-    const credentials = Buffer.from(USER_ID + ':' + API_KEY).toString('base64');
-    const authHeader = 'Basic ' + credentials;
-
-    console.log('Auth header created. Calling endpoint...');
-
-    const response = await fetch('https://pdf.astrologyapi.com/v1/basic_horoscope_pdf', {
+    const pdfResponse = await fetch('https://api.prokerala.com/v2/report/personal-reading/instant', {
       method: 'POST',
       headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(pdfPayload)
     });
 
-    const responseText = await response.text();
-    console.log('API Response Status:', response.status);
-    console.log('API Response Body:', responseText.slice(0, 600));
+    console.log('PDF Response status:', pdfResponse.status);
 
-    let responseData = {};
-    try {
-      responseData = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Failed to parse JSON:', e);
+    // Prokerala returns PDF binary, not JSON
+    if (!pdfResponse.ok) {
+      const errText = await pdfResponse.text();
+      console.error('PDF generation failed:', errText.slice(0, 300));
+      return { statusCode: pdfResponse.status, body: JSON.stringify({ 
+        error: 'PDF generation failed: ' + errText.slice(0, 200)
+      })};
     }
 
-    // Check for success
-    if (response.ok && responseData.pdf_url) {
-      console.log('✅ Success! PDF URL:', responseData.pdf_url);
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          pdf_url: responseData.pdf_url,
-          place: placeFull 
-        })
-      };
-    }
+    // Get the PDF as buffer
+    const pdfBuffer = await pdfResponse.arrayBuffer();
+    console.log('✅ PDF generated successfully, size:', pdfBuffer.byteLength);
 
-    // Handle error
-    const errorMsg = responseData.message || responseData.msg || responseData.error || responseText;
-    console.error('API Error:', errorMsg);
+    // Convert to base64 so we can return as data URL
+    const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
+    const pdfDataUrl = 'data:application/pdf;base64,' + pdfBase64;
+
     return {
-      statusCode: response.status || 502,
+      statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        error: String(errorMsg).slice(0, 400)
+        pdf_url: pdfDataUrl,
+        place: placeFull
       })
     };
 
   } catch (error) {
-    console.error('Fetch Error:', error);
+    console.error('PDF Fetch Error:', error);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        error: 'Request failed: ' + String(error).slice(0, 200)
+        error: 'PDF generation failed: ' + String(error).slice(0, 200)
       })
     };
   }
