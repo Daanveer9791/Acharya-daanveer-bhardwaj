@@ -1,5 +1,5 @@
 // Netlify Function: Kundli PDF Generator via astrologyapi.com
-// This function resolves city names to coordinates and calls astrologyapi
+// Uses Basic Auth with User ID + API Key
 
 const CITIES = {
   'gurgaon': { lat: 28.4595, lon: 77.0266, name: 'Gurgaon, Haryana, India' },
@@ -19,12 +19,10 @@ const CITIES = {
 };
 
 exports.handler = async (event) => {
-  // Only POST allowed
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // Parse request body
   let body = {};
   try {
     body = JSON.parse(event.body || '{}');
@@ -34,7 +32,6 @@ exports.handler = async (event) => {
 
   const { name, gender, day, month, year, hour, min, place, language } = body;
 
-  // Validate all fields present
   if (!name || !place || day === undefined || month === undefined || year === undefined || 
       hour === undefined || min === undefined) {
     return { statusCode: 400, body: JSON.stringify({ 
@@ -42,11 +39,9 @@ exports.handler = async (event) => {
     })};
   }
 
-  // Convert place to lowercase and get first word
   const placeKey = String(place).toLowerCase().trim().split(',')[0].trim();
   console.log('Looking up city:', placeKey);
 
-  // Check if city is in our list
   if (!CITIES[placeKey]) {
     const availableCities = Object.keys(CITIES).map(k => k.charAt(0).toUpperCase() + k.slice(1)).join(', ');
     return { statusCode: 422, body: JSON.stringify({ 
@@ -58,21 +53,25 @@ exports.handler = async (event) => {
   const lat = city.lat;
   const lon = city.lon;
   const placeFull = city.name;
-  const tzone = 5.5; // India standard time
+  const tzone = 5.5;
 
   console.log('City found:', placeFull, 'coordinates:', lat, lon);
 
-  // Get API key from environment
+  // Get credentials from environment
+  const USER_ID = process.env.ASTRO_USER_ID;
   const API_KEY = process.env.ASTRO_API_KEY;
-  if (!API_KEY) {
+
+  if (!USER_ID || !API_KEY) {
+    console.error('Missing credentials - USER_ID:', !!USER_ID, 'API_KEY:', !!API_KEY);
     return { statusCode: 500, body: JSON.stringify({ 
-      error: 'Server configuration error' 
+      error: 'Server configuration error (missing credentials)' 
     })};
   }
 
+  console.log('Credentials present. USER_ID length:', String(USER_ID).length, 'API_KEY length:', String(API_KEY).length);
+
   const lang = (language === 'en') ? 'en' : 'hi';
 
-  // Build payload for astrologyapi
   const payload = {
     name: String(name).trim(),
     gender: String(gender || 'male').toLowerCase(),
@@ -90,21 +89,26 @@ exports.handler = async (event) => {
     footer_link: 'acharyadaanveer.netlify.app',
     logo_url: '',
     company_name: 'Acharya Daanveer Bhardwaj',
-    company_info: 'Third-generation Vedic astrologer, Gurgaon. Kundli • Matchmaking • Vastu • Puja • Gemstones • Dosha Nivaran. Consultation: +91 98109 69791',
+    company_info: 'Third-generation Vedic astrologer, Gurgaon. Kundli • Matchmaking • Vastu • Puja • Dosha Nivaran. Consultation: +91 98109 69791',
     domain_url: 'https://acharyadaanveer.netlify.app',
     company_email: 'daanveerbhardwaj@gmail.com',
     company_landline: '+91-981-096-9791',
     company_mobile: '+91-981-096-9791'
   };
 
-  console.log('Payload:', JSON.stringify(payload));
+  console.log('Payload ready. Calling astrologyapi with Basic Auth');
 
-  // Call astrologyapi
   try {
+    // Build Basic Auth header: Base64(USER_ID:API_KEY)
+    const credentials = Buffer.from(USER_ID + ':' + API_KEY).toString('base64');
+    const authHeader = 'Basic ' + credentials;
+
+    console.log('Auth header created. Calling endpoint...');
+
     const response = await fetch('https://pdf.astrologyapi.com/v1/basic_horoscope_pdf', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + API_KEY,
+        'Authorization': authHeader,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -113,7 +117,7 @@ exports.handler = async (event) => {
 
     const responseText = await response.text();
     console.log('API Response Status:', response.status);
-    console.log('API Response Body:', responseText.slice(0, 500));
+    console.log('API Response Body:', responseText.slice(0, 600));
 
     let responseData = {};
     try {
@@ -124,7 +128,7 @@ exports.handler = async (event) => {
 
     // Check for success
     if (response.ok && responseData.pdf_url) {
-      console.log('Success! PDF URL:', responseData.pdf_url);
+      console.log('✅ Success! PDF URL:', responseData.pdf_url);
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -136,13 +140,13 @@ exports.handler = async (event) => {
     }
 
     // Handle error
-    const errorMsg = responseData.message || responseData.error || responseText;
+    const errorMsg = responseData.message || responseData.msg || responseData.error || responseText;
     console.error('API Error:', errorMsg);
     return {
       statusCode: response.status || 502,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        error: String(errorMsg).slice(0, 300)
+        error: String(errorMsg).slice(0, 400)
       })
     };
 
